@@ -1,4 +1,6 @@
-if; then
+#!/bin/sh
+
+if [ -n "$PORT" ]; then
   export N8N_PORT=$PORT
 fi
 
