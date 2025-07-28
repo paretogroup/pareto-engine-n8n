@@ -31,6 +31,7 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SA_EMAIL }}
+          configure_docker: 'true'
 
       - name: Get Google Cloud access token
         id: gcloud-auth
