@@ -43,7 +43,7 @@ jobs:
 
       - name: Build and Push with Cloud Build
         run: |
-          gcloud builds submit --tag "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" --no-source option --project=${{ env.PROJECT_ID }}
+          gcloud builds submit --tag "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" --project=${{ env.PROJECT_ID }} --no-source
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
