@@ -36,12 +36,6 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Verify authentication
-        run: |
-          echo "Current project: $(gcloud config get-value project)"
-          echo "Authenticated as: $(gcloud config get-value account)"
-          gcloud auth list
-
       - name: Configure Docker for Artifact Registry
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
@@ -80,7 +74,7 @@ jobs:
             DB_POSTGRESDB_USER=postgres
             DB_POSTGRESDB_SCHEMA=public
             GENERIC_TIMEZONE=America/Sao_Paulo
-            EXECUTIONS_MODE=main
+            EXECUTIONS_MODE=queue
             N8N_LOG_LEVEL=info
             N8N_HOST=0.0.0.0
             WEBHOOK_URL=https://engine.pareto.io
