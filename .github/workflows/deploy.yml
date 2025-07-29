@@ -10,6 +10,7 @@ env:
   REGION: us-central1
   SERVICE_NAME: n8n-production
   REPO_NAME: n8n-docker-repo
+  DB_HOST: n8n-postgres-instance
 
 jobs:
   deploy:
@@ -36,16 +37,30 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Build and Push with Cloud Build
+      - name: Configure Docker for Artifact Registry
         run: |
-          gcloud builds submit --tag "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" --project=${{ env.PROJECT_ID }}
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }} .
           flags: >-
             --vpc-connector=n8n-vpc-connector
             --add-cloudsql-instances=${{ env.PROJECT_ID }}:${{ env.REGION }}:n8n-postgres-instance
@@ -54,13 +69,14 @@ jobs:
             DB_POSTGRESDB_PASSWORD=n8n-postgres-password:latest
           env_vars: |
             DB_TYPE=postgresdb
-            DB_POSTGRESDB_HOST=/cloudsql/${{ env.PROJECT_ID }}:${{ env.REGION }}:n8n-postgres-instance
+            DB_POSTGRESDB_HOST=/cloudsql/${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.DB_HOST }}
             DB_POSTGRESDB_PORT=5432
             DB_POSTGRESDB_DATABASE=n8n
-            DB_POSTGRESDB_USER=postgres
+            DB_POSTGRESDB_USER=${{ env.DB_HOST }}
             DB_POSTGRESDB_SCHEMA=public
             GENERIC_TIMEZONE=America/Sao_Paulo
-            EXECUTIONS_MODE=main
+            EXECUTIONS_MODE=queue
             N8N_LOG_LEVEL=info
             N8N_HOST=0.0.0.0
+            N8N_PORT=8080
             WEBHOOK_URL=https://engine.pareto.io
