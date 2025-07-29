@@ -31,28 +31,13 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SA_EMAIL }}
-          project_id: ${{ env.PROJECT_ID }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker for Artifact Registry
+      - name: Build and Push with Cloud Build
         run: |
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Docker image
-        id: build-and-push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64
+          gcloud builds submit --tag "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" .
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
@@ -74,8 +59,7 @@ jobs:
             DB_POSTGRESDB_USER=postgres
             DB_POSTGRESDB_SCHEMA=public
             GENERIC_TIMEZONE=America/Sao_Paulo
-            EXECUTIONS_MODE=queue
+            EXECUTIONS_MODE=main
             N8N_LOG_LEVEL=info
             N8N_HOST=0.0.0.0
             WEBHOOK_URL=https://engine.pareto.io
-
