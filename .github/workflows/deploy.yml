@@ -41,9 +41,15 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
-      - name: Build and Push with Cloud Build
+      # - name: Build and Push with Cloud Build
+      #   run: |
+      #     gcloud builds submit --tag "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" --project=${{ env.PROJECT_ID }} .
+
+      - name: GCP - Build Docker Service Image
         run: |
-          gcloud builds submit --tag "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" --project=${{ env.PROJECT_ID }} .
+          gcloud builds submit --region=${{ env.REGION }} \
+            --config cloudbuild.yml \
+            --substitutions=_GCP_REGION="${{ env.REGION }}",_GCP_PROJECT_ID="${{ env.PROJECT_ID }}",_SERVICE_NAME="${{ env.SERVICE_NAME }}",_COMMIT_SHA=${{ github.sha }}
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
